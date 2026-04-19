@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useRef, useEffect } from 'react';
-import { GoogleGenAI, ThinkingLevel } from "@google/genai";
+import { GoogleGenAI, ThinkingLevel, Modality } from "@google/genai";
 import { 
   Send, 
   Bot, 
@@ -63,12 +63,19 @@ export default function App() {
   const [isTyping, setIsTyping] = useState(false);
   const [isVoiceLoading, setIsVoiceLoading] = useState<string | null>(null);
   const [mode, setMode] = useState<WorkspaceMode>('chat');
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [voiceSettings, setVoiceSettings] = useState<VoiceConfig>({
     enabled: true,
     voice: 'Kore',
     autoPlay: false
   });
+
+  useEffect(() => {
+    // Set sidebar open on desktop by default
+    if (window.innerWidth > 1024) {
+      setSidebarOpen(true);
+    }
+  }, []);
   const [showVoiceSettings, setShowVoiceSettings] = useState(false);
   
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -105,7 +112,7 @@ export default function App() {
         model: "gemini-3.1-flash-tts-preview",
         contents: [{ parts: [{ text: `Say this precisely: ${text}` }] }],
         config: {
-          responseModalities: ["AUDIO" as any],
+          responseModalities: [Modality.AUDIO],
           speechConfig: {
             voiceConfig: {
               prebuiltVoiceConfig: { voiceName: voiceSettings.voice },
@@ -316,48 +323,91 @@ export default function App() {
   return (
     <div className="flex h-screen bg-brand-bg text-brand-text-main font-sans selection:bg-brand-accent/30">
       {/* Sidebar */}
+      <AnimatePresence>
+        {sidebarOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setSidebarOpen(false)}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden"
+          />
+        )}
+      </AnimatePresence>
+
       <motion.aside 
         initial={false}
-        animate={{ width: sidebarOpen ? 240 : 0, opacity: sidebarOpen ? 1 : 0 }}
-        className="border-r border-brand-border bg-brand-surface flex flex-col overflow-hidden"
+        animate={{ 
+          width: sidebarOpen ? 240 : 0, 
+          opacity: sidebarOpen ? 1 : 0,
+          x: sidebarOpen ? 0 : -240
+        }}
+        transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+        className="fixed lg:relative h-full border-r border-brand-border bg-brand-surface flex flex-col overflow-hidden z-50 lg:z-auto"
       >
-        <div className="p-6 pb-10 flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-lg bg-brand-accent flex items-center justify-center shadow-lg shadow-brand-accent/20 border-t border-white/30">
-            <span className="text-white font-black text-sm tracking-tighter">HK</span>
+        <div className="p-6 pb-10 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-lg bg-brand-accent flex items-center justify-center shadow-lg shadow-brand-accent/20 border-t border-white/30">
+              <span className="text-white font-black text-sm tracking-tighter">HK</span>
+            </div>
+            <span className="font-extrabold text-xl tracking-tighter whitespace-nowrap text-white uppercase">
+              HK TECH <span className="text-brand-accent">WORLD</span>
+            </span>
           </div>
-          <span className="font-extrabold text-xl tracking-tighter whitespace-nowrap text-white uppercase">
-            HK TECH <span className="text-brand-accent">WORLD</span>
-          </span>
+          <button 
+            onClick={() => setSidebarOpen(false)}
+            className="lg:hidden p-2 text-brand-text-dim hover:text-white"
+          >
+            <Plus className="w-5 h-5 rotate-45" />
+          </button>
         </div>
 
         <div className="flex-1 px-4 space-y-2">
           <ModeButton 
             active={mode === 'chat'} 
-            onClick={() => setMode('chat')}
+            onClick={() => { setMode('chat'); if (window.innerWidth < 1024) setSidebarOpen(false); }}
             icon={<MessageSquare className="w-4 h-4" />}
             label="Neural Engine"
           />
           <ModeButton 
             active={mode === 'image'} 
-            onClick={() => setMode('image')}
+            onClick={() => { setMode('image'); if (window.innerWidth < 1024) setSidebarOpen(false); }}
             icon={<Palette className="w-4 h-4" />}
             label="Creative Suite"
           />
           <ModeButton 
             active={mode === 'coding'} 
-            onClick={() => setMode('coding')}
+            onClick={() => { setMode('coding'); if (window.innerWidth < 1024) setSidebarOpen(false); }}
             icon={<Code className="w-4 h-4" />}
             label="Code Architect"
           />
           <ModeButton 
             active={mode === 'video'} 
-            onClick={() => setMode('video')}
+            onClick={() => { setMode('video'); if (window.innerWidth < 1024) setSidebarOpen(false); }}
             icon={<Video className="w-4 h-4" />}
             label="Motion Engine"
           />
         </div>
 
         <div className="p-6 border-t border-brand-border flex flex-col gap-6">
+          <div className="flex flex-col gap-3">
+            <div className="text-[10px] uppercase tracking-wider font-bold text-brand-text-dim">Voice Output</div>
+            <button 
+              onClick={() => setVoiceSettings(v => ({ ...v, enabled: !v.enabled }))}
+              className={`flex items-center justify-between gap-3 px-3 py-2 rounded-lg border transition-all ${
+                voiceSettings.enabled 
+                  ? 'bg-brand-accent/10 border-brand-accent text-brand-accent' 
+                  : 'bg-zinc-900/50 border-brand-border text-brand-text-dim'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                {voiceSettings.enabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+                <span className="text-xs font-bold uppercase tracking-tight">{voiceSettings.enabled ? 'ON' : 'OFF'}</span>
+              </div>
+              <div className={`w-2 h-2 rounded-full ${voiceSettings.enabled ? 'bg-brand-accent animate-pulse' : 'bg-zinc-700'}`}></div>
+            </button>
+          </div>
+
           <div className="flex flex-col gap-1">
             <div className="text-[10px] uppercase tracking-wider font-bold text-brand-text-dim">System Status</div>
             <div className="flex items-center gap-2 text-brand-accent font-bold text-sm">
@@ -391,11 +441,19 @@ export default function App() {
             </div>
           </div>
           
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
+            <button 
+              onClick={() => setVoiceSettings(v => ({ ...v, enabled: !v.enabled }))}
+              className={`p-2 rounded-lg transition-all ${voiceSettings.enabled ? 'text-brand-accent bg-brand-accent/10 border border-brand-accent/20' : 'text-brand-text-dim hover:bg-brand-surface'}`}
+              title={voiceSettings.enabled ? "Voice Enabled" : "Voice Disabled"}
+            >
+              {voiceSettings.enabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
+            </button>
+
             <button 
               onClick={() => setShowVoiceSettings(!showVoiceSettings)}
               className={`p-2 rounded-lg transition-all ${showVoiceSettings ? 'bg-brand-accent text-white' : 'text-brand-text-dim hover:bg-brand-surface hover:text-white'}`}
-              title="Voice Settings"
+              title="System Settings"
             >
               <Settings className="w-5 h-5" />
             </button>
@@ -510,9 +568,19 @@ export default function App() {
                              </a>
                           </div>
                         </div>
+                        <div className="flex gap-2 lg:hidden">
+                           <a 
+                              href={msg.imageUrl} 
+                              download="hk-tech-gen.png"
+                              className="flex-1 py-3 bg-brand-surface border border-brand-border rounded-xl text-xs font-bold text-brand-text-main flex items-center justify-center gap-2 active:bg-brand-accent/10"
+                           >
+                              <Download className="w-4 h-4 text-brand-accent" />
+                              Save to Device
+                           </a>
+                        </div>
                       </div>
                     ) : (
-                      <div className="prose prose-invert prose-emerald max-w-none prose-sm sm:prose-base leading-relaxed relative group/msg-content">
+                      <div className="prose prose-invert prose-emerald max-w-none prose-sm sm:prose-base leading-relaxed relative group/msg-content prose-p:leading-relaxed prose-headings:mb-4 prose-code:text-brand-accent">
                         {voiceSettings.enabled && msg.role === 'assistant' && (
                           <button 
                             onClick={() => playVoice(msg.content, msg.id)}
