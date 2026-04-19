@@ -450,22 +450,13 @@ export default function App() {
                   </button>
                 </div>
 
-                <div className="space-y-2">
-                  <span className="text-xs font-medium text-brand-text-dim">Selected Engine</span>
-                  <div className="grid grid-cols-2 gap-2">
-                    {(['Puck', 'Charon', 'Kore', 'Fenrir', 'Zephyr'] as const).map(v => (
-                      <button 
-                        key={v}
-                        onClick={() => setVoiceSettings(vs => ({ ...vs, voice: v }))}
-                        className={`px-2 py-1.5 rounded-lg text-[10px] font-bold border transition-all ${
-                          voiceSettings.voice === v 
-                            ? 'bg-brand-accent/10 border-brand-accent text-brand-accent' 
-                            : 'border-brand-border text-brand-text-dim hover:border-zinc-600'
-                        }`}
-                      >
-                        {v}
-                      </button>
-                    ))}
+                <div className="p-3 bg-brand-bg/50 border border-brand-border rounded-lg flex items-center gap-3">
+                  <div className="p-2 bg-brand-accent/10 rounded-lg">
+                    <Zap className="w-3.5 h-3.5 text-brand-accent" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-black uppercase text-brand-text-dim tracking-tighter">Active Voice Engine</span>
+                    <span className="text-xs font-bold text-white italic">Kore (Premium HD)</span>
                   </div>
                 </div>
               </div>
